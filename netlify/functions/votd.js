@@ -1,5 +1,27 @@
+// SIMPLE IN-MEMORY CACHE (Resets when Netlify spins down the function)
+let cachedData = null;
+let lastFetchTime = 0;
+
 export async function handler(event, context) {
-  // 1. Calculate Day of Year
+  const CACHE_DURATION = 1000 * 60 * 60; // 1 Hour in milliseconds
+
+  // 1. Check In-Memory Cache first (Fastest)
+  const now = Date.now();
+  if (cachedData && (now - lastFetchTime < CACHE_DURATION)) {
+    console.log("Serving from In-Memory Cache");
+    return {
+      statusCode: 200,
+      headers: {
+        "Content-Type": "application/json",
+        // Tell Browser: Don't cache (check with server)
+        // Tell Netlify CDN: Cache this for 3600 seconds (1 hour)
+        "Cache-Control": "public, max-age=0, s-maxage=3600" 
+      },
+      body: JSON.stringify(cachedData)
+    };
+  }
+
+  // 2. Prepare for Fresh Fetch
   const today = new Date();
   const start = new Date(today.getFullYear(), 0, 0);
   const diff = today - start;
@@ -11,12 +33,13 @@ export async function handler(event, context) {
     return { statusCode: 500, body: JSON.stringify({ error: "Server config error" }) };
   }
 
-  const bibleId = "111"; // NIV
+  // ID 111 = NIV (Licensed)
+  const bibleId = "111"; 
 
   try {
     // --- STEP 1: Get the Passage ID ---
     const votdUrl = `https://api.youversion.com/v1/verse_of_the_days/${dayOfYear}`;
-    console.log(`Fetching VOTD ID from: ${votdUrl}`);
+    console.log(`Fetching FRESH VOTD ID from: ${votdUrl}`);
 
     const votdResponse = await fetch(votdUrl, {
       headers: {
@@ -31,32 +54,19 @@ export async function handler(event, context) {
 
     const votdData = await votdResponse.json();
 
-    // *** CRITICAL DEBUG LOG ***
-    // This will appear in your Netlify logs so you can see the EXACT structure
-    console.log("VOTD RAW RESPONSE:", JSON.stringify(votdData, null, 2));
-
-    // Flexible extraction: Try multiple common locations for the ID
-    let passageId = null;
-    
-    if (votdData.data && Array.isArray(votdData.data) && votdData.data.length > 0) {
-      // Structure: { data: [ { passage_id: "..." } ] } (Documentation standard)
-      passageId = votdData.data[0].passage_id;
-    } else if (votdData.data && votdData.data.passage_id) {
-      // Structure: { data: { passage_id: "..." } } (Single object variant)
-      passageId = votdData.data.passage_id;
-    } else if (votdData.passage_id) {
-      // Structure: { passage_id: "..." } (Root level variant)
-      passageId = votdData.passage_id;
+    // Flexible extraction logic
+    let passageId = votdData.passage_id;
+    if (!passageId && votdData.data) {
+       passageId = Array.isArray(votdData.data) ? votdData.data[0]?.passage_id : votdData.data.passage_id;
     }
 
     if (!passageId) {
-      // If we still can't find it, the schedule for this day might be empty
-      throw new Error(`No passage_id found. Keys received: ${Object.keys(votdData).join(", ")}`);
+      throw new Error("No passage_id found in response");
     }
 
     // --- STEP 2: Get the Verse Text ---
     const passageUrl = `https://api.youversion.com/v1/bibles/${bibleId}/passages/${passageId}`;
-    console.log(`Fetching Text from: ${passageUrl}`);
+    console.log(`Fetching FRESH Text from: ${passageUrl}`);
 
     const textResponse = await fetch(passageUrl, {
       headers: {
@@ -70,27 +80,34 @@ export async function handler(event, context) {
     }
 
     const textData = await textResponse.json();
-    console.log("TEXT RAW RESPONSE:", JSON.stringify(textData, null, 2));
-
-    // --- STEP 3: Format Output ---
-    const verseText = textData.content || textData.text || textData.html || "Text unavailable";
     
-    // Ensure reference format is like "Matthew 15:13"
-    // The API usually returns this in 'reference' or 'human_reference'
+    // --- STEP 3: Format & Store in Cache ---
+    const verseText = textData.content || textData.text || "Text unavailable";
     const humanReference = textData.reference || textData.human_reference || passageId;
-    
     const verseUrl = `https://www.bible.com/bible/${bibleId}/${passageId}`;
+
+    // Create the final object
+    const finalResponseData = {
+      verse: {
+        text: verseText,
+        human_reference: humanReference,
+        url: verseUrl
+      }
+    };
+
+    // Update In-Memory Cache
+    cachedData = finalResponseData;
+    lastFetchTime = Date.now();
 
     return {
       statusCode: 200,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        verse: {
-          text: verseText,
-          human_reference: humanReference,
-          url: verseUrl
-        }
-      })
+      headers: { 
+        "Content-Type": "application/json",
+        // IMPORTANT: This header tells Netlify to serve this exact response 
+        // to other users for the next 3600 seconds without running this code again.
+        "Cache-Control": "public, max-age=0, s-maxage=3600" 
+      },
+      body: JSON.stringify(finalResponseData)
     };
 
   } catch (err) {
