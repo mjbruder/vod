@@ -11,7 +11,7 @@ export async function handler(event, context) {
     return { statusCode: 500, body: JSON.stringify({ error: "Server config error" }) };
   }
 
-  const bibleId = "206"; // WEB
+  const bibleId = "111"; // NIV
 
   try {
     // --- STEP 1: Get the Passage ID ---
