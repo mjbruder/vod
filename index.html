@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Verse of the Day</title>
+  <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16x16.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="48x48" href="assets/favicon-48x48.png" />
+  <link rel="icon" type="image/png" sizes="180x180" href="assets/favicon-180x180.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/favicon-192x192.png" />
+  <link rel="icon" type="image/png" sizes="512x512" href="assets/favicon-512x512.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: 'Inter', sans-serif;
+      color: #fff;
+      text-align: center;
+      background: linear-gradient(-45deg, #2b5876, #4e4376, #2b5876);
+      background-size: 400% 400%;
+      animation: gradientShift 24s ease infinite;
+      overflow: hidden;
+    }
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    body::after {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='noise'><feTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/></filter><rect width='200' height='200' filter='url(%23noise)'/></svg>");
+      opacity: 0.08;
+      animation: noiseShift 60s linear infinite;
+      z-index: -1;
+    }
+    @keyframes noiseShift {
+      0%   { transform: translate(0,0); }
+      50%  { transform: translate(-20px, 15px); }
+      100% { transform: translate(0,0); }
+    }
+    .verse-container {
+      position: relative;
+      background: rgba(0, 0, 0, 0.55);
+      padding: 4rem 3rem 3.5rem;
+      border-radius: 20px;
+      max-width: 1000px;
+      width: min(92vw, 1000px);
+      box-shadow: 0 12px 30px rgba(0,0,0,0.5);
+      animation: fadeIn 1.4s ease;
+      z-index: 1;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(14px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .votd {
+      font-size: clamp(1.6rem, 4.5vw, 3rem);
+      line-height: 1.7;
+      font-weight: 300;
+      letter-spacing: 0.4px;
+      color: #fdfdfd;
+      text-shadow: 1px 1px 6px rgba(0,0,0,0.7);
+    }
+    .votd p, .votd blockquote { margin: 0.4rem 0; }
+    .votd a.passage {
+      font-size: inherit;
+      color: #e6e6e6;
+      font-style: italic;
+      text-decoration: none;
+      border-bottom: 1px dashed rgba(255,255,255,0.35);
+      transition: color 0.3s ease, border-color 0.3s ease;
+    }
+    .votd a.passage:hover {
+      color: #ffffff;
+      border-bottom-color: rgba(255,255,255,0.75);
+    }
+    .attribution {
+      position: absolute;
+      bottom: 0.75rem;
+      right: 1rem;
+      font-size: 0.75rem;
+      color: rgba(255,255,255,0.45);
+      font-style: italic;
+      text-decoration: none;
+    }
+    .attribution:hover {
+      color: rgba(255,255,255,0.7);
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="verse-container">
+    <div id="votd" class="votd" aria-live="polite"></div>
+    <a class="attribution" href="https://www.youversion.com" target="_blank" rel="noopener noreferrer">
+      Powered by YouVersion
+    </a>
+  </div>
+
+  <script>
+    async function loadVerse() {
+      const target = document.getElementById('votd');
+      try {
+        // Use the redirect path consistently
+        const response = await fetch("/api/votd");
+        const data = await response.json();
+
+        const verseText = data.verse?.text || '';
+        const reference = data.verse?.human_reference || '';
+        const passageUrl = data.verse?.url || '';
+
+        target.innerHTML = `
+          <blockquote>${verseText}</blockquote>
+          ${reference ? `<p><a class="passage" href="${passageUrl}" target="_blank" rel="noopener noreferrer">${reference}</a></p>` : ''}
+        `;
+      } catch (err) {
+        target.innerHTML = "<p>Unable to load Verse of the Day.</p>";
+        console.error(err);
+      }
+    }
+    loadVerse();
+  </script>
+</body>
+</html>
