@@ -1,45 +1,61 @@
-// SIMPLE IN-MEMORY CACHE (Resets when Netlify spins down the function)
-let cachedData = null;
-let lastFetchTime = 0;
+// Global Cache: Stores the data AND the day it belongs to
+let memoryCache = {
+  day: null,
+  data: null,
+  timestamp: 0
+};
 
 export async function handler(event, context) {
-  const CACHE_DURATION = 1000 * 60 * 60; // 1 Hour in milliseconds
+  // 1. Determine which day to fetch
+  // We look for ?day=XXX from the frontend. 
+  // If missing, fallback to Server UTC time (Legacy support).
+  let dayToFetch;
+  
+  if (event.queryStringParameters && event.queryStringParameters.day) {
+    dayToFetch = parseInt(event.queryStringParameters.day, 10);
+  } else {
+    // Fallback: Server Time Calculation
+    const today = new Date();
+    const start = new Date(today.getFullYear(), 0, 0);
+    const diff = today - start;
+    const oneDay = 1000 * 60 * 60 * 24;
+    dayToFetch = Math.floor(diff / oneDay);
+  }
 
-  // 1. Check In-Memory Cache first (Fastest)
+  // 2. Check In-Memory Cache
+  // Logic: Is there data? Is it for the SAME day requested? Is it less than 1 hour old?
+  const CACHE_DURATION = 1000 * 60 * 60; // 1 Hour
   const now = Date.now();
-  if (cachedData && (now - lastFetchTime < CACHE_DURATION)) {
-    console.log("Serving from In-Memory Cache");
+
+  if (memoryCache.data && 
+      memoryCache.day === dayToFetch && 
+      (now - memoryCache.timestamp < CACHE_DURATION)) {
+    
+    console.log(`Serving Day ${dayToFetch} from In-Memory Cache`);
     return {
       statusCode: 200,
       headers: {
         "Content-Type": "application/json",
-        // Tell Browser: Don't cache (check with server)
-        // Tell Netlify CDN: Cache this for 3600 seconds (1 hour)
-        "Cache-Control": "public, max-age=0, s-maxage=3600" 
+        // Cache this specific URL (?day=XXX) for 1 hour on the CDN
+        "Cache-Control": "public, max-age=0, s-maxage=3600"
       },
-      body: JSON.stringify(cachedData)
+      body: JSON.stringify(memoryCache.data)
     };
   }
 
-  // 2. Prepare for Fresh Fetch
-  const today = new Date();
-  const start = new Date(today.getFullYear(), 0, 0);
-  const diff = today - start;
-  const oneDay = 1000 * 60 * 60 * 24;
-  const dayOfYear = Math.floor(diff / oneDay);
-
+  // --- External Fetch Logic ---
   if (!process.env.YOUVERSION_API_KEY) {
     console.error("Missing YOUVERSION_API_KEY");
     return { statusCode: 500, body: JSON.stringify({ error: "Server config error" }) };
   }
 
-  // ID 111 = NIV (Licensed)
-  const bibleId = "111"; 
+  // ID 206 = World English Bible (Public Domain)
+  const bibleId = "206"; 
 
   try {
-    // --- STEP 1: Get the Passage ID ---
-    const votdUrl = `https://api.youversion.com/v1/verse_of_the_days/${dayOfYear}`;
-    console.log(`Fetching FRESH VOTD ID from: ${votdUrl}`);
+    // Step 1: Get Passage ID
+    const votdUrl = `https://api.youversion.com/v1/verse_of_the_days/${dayToFetch}`;
+    console.log(`Fetching ID for Day ${dayToFetch} from: ${votdUrl}`);
 
     const votdResponse = await fetch(votdUrl, {
       headers: {
@@ -53,20 +69,24 @@ export async function handler(event, context) {
     }
 
     const votdData = await votdResponse.json();
-
-    // Flexible extraction logic
-    let passageId = votdData.passage_id;
-    if (!passageId && votdData.data) {
-       passageId = Array.isArray(votdData.data) ? votdData.data[0]?.passage_id : votdData.data.passage_id;
+    
+    // Extract ID safely
+    let passageId = null;
+    if (votdData.data && Array.isArray(votdData.data) && votdData.data.length > 0) {
+      passageId = votdData.data[0].passage_id;
+    } else if (votdData.data && votdData.data.passage_id) {
+      passageId = votdData.data.passage_id;
+    } else if (votdData.passage_id) {
+      passageId = votdData.passage_id;
     }
 
     if (!passageId) {
-      throw new Error("No passage_id found in response");
+      throw new Error(`No passage_id found for day ${dayToFetch}`);
     }
 
-    // --- STEP 2: Get the Verse Text ---
+    // Step 2: Get Text
     const passageUrl = `https://api.youversion.com/v1/bibles/${bibleId}/passages/${passageId}`;
-    console.log(`Fetching FRESH Text from: ${passageUrl}`);
+    console.log(`Fetching Text for Day ${dayToFetch}`);
 
     const textResponse = await fetch(passageUrl, {
       headers: {
@@ -80,14 +100,13 @@ export async function handler(event, context) {
     }
 
     const textData = await textResponse.json();
-    
-    // --- STEP 3: Format & Store in Cache ---
-    const verseText = textData.content || textData.text || "Text unavailable";
+
+    // Step 3: Format Data
+    const verseText = textData.content || textData.text || textData.html || "Text unavailable";
     const humanReference = textData.reference || textData.human_reference || passageId;
     const verseUrl = `https://www.bible.com/bible/${bibleId}/${passageId}`;
 
-    // Create the final object
-    const finalResponseData = {
+    const finalData = {
       verse: {
         text: verseText,
         human_reference: humanReference,
@@ -95,19 +114,21 @@ export async function handler(event, context) {
       }
     };
 
-    // Update In-Memory Cache
-    cachedData = finalResponseData;
-    lastFetchTime = Date.now();
+    // Update In-Memory Cache with the specific day
+    memoryCache = {
+      day: dayToFetch,
+      data: finalData,
+      timestamp: Date.now()
+    };
 
     return {
       statusCode: 200,
       headers: { 
         "Content-Type": "application/json",
-        // IMPORTANT: This header tells Netlify to serve this exact response 
-        // to other users for the next 3600 seconds without running this code again.
-        "Cache-Control": "public, max-age=0, s-maxage=3600" 
+        // Cache this specific day request for 1 hour on CDN
+        "Cache-Control": "public, max-age=0, s-maxage=3600"
       },
-      body: JSON.stringify(finalResponseData)
+      body: JSON.stringify(finalData)
     };
 
   } catch (err) {

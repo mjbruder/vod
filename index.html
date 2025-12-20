@@ -107,9 +107,20 @@
   <script>
     async function loadVerse() {
       const target = document.getElementById('votd');
+      
+      // 1. Calculate the User's Local Day of Year
+      const now = new Date();
+      const start = new Date(now.getFullYear(), 0, 0);
+      const diff = now - start;
+      const oneDay = 1000 * 60 * 60 * 24;
+      const localDay = Math.floor(diff / oneDay);
+
       try {
-        // Use the redirect path consistently
-        const response = await fetch("/api/votd");
+        // 2. Pass the local day to the backend
+        const response = await fetch(`/api/votd?day=${localDay}`);
+        
+        if (!response.ok) throw new Error("API Request Failed");
+        
         const data = await response.json();
 
         const verseText = data.verse?.text || '';
