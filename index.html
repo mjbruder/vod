@@ -74,7 +74,17 @@
       letter-spacing: 0.4px;
       color: #fdfdfd;
       text-shadow: 1px 1px 6px rgba(0,0,0,0.7);
+      width: 100%;
+
+      /* SMOOTH ENTRY: Start invisible, fade in when text arrives */
+      opacity: 0;
+      transition: opacity 0.8s ease-out;
     }
+    /* Class added via JS when data is ready */
+    .votd.visible {
+      opacity: 1;
+    }
+
     .votd p, .votd blockquote { margin: 0.4rem 0; }
     .votd a.passage {
       font-size: inherit;
@@ -112,7 +122,8 @@
   </div>
 
   <script>
-    async function loadVerse() {
+    // Immediate Execution Function
+    (async function loadVerse() {
       const target = document.getElementById('votd');
       
       // 1. Calculate the User's Local Day of Year
@@ -134,16 +145,24 @@
         const reference = data.verse?.human_reference || '';
         const passageUrl = data.verse?.url || '';
 
+        // 3. Render HTML
         target.innerHTML = `
           <blockquote>${verseText}</blockquote>
           ${reference ? `<p><a class="passage" href="${passageUrl}" target="_blank" rel="noopener noreferrer">${reference}</a></p>` : ''}
         `;
+
+        // 4. Trigger Fade In
+        // requestAnimationFrame ensures the browser paints the HTML before we fade it in
+        requestAnimationFrame(() => {
+          target.classList.add('visible');
+        });
+
       } catch (err) {
         target.innerHTML = "<p>Unable to load Verse of the Day.</p>";
+        target.classList.add('visible'); // Make sure error message is visible
         console.error(err);
       }
-    }
-    loadVerse();
+    })();
   </script>
 </body>
 </html>
