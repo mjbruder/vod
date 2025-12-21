@@ -15,6 +15,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@1,400&family=Inter:wght@300;400&display=swap" rel="stylesheet" />
   
   <style>
+    /* RESET & BASE */
     body {
       margin: 0;
       height: 100vh;
@@ -25,51 +26,76 @@
       color: #fff;
       text-align: center;
       overflow: hidden;
-      
-      /* --- AURORA BACKGROUND BASE --- */
-      background-color: #0f172a; /* Deep dark blue base */
-      /* Static background gradients to fill gaps */
-      background-image: 
-        radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
-        radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%), 
-        radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%);
+      background-color: #0f172a; /* Fallback color */
     }
 
-    /* --- AURORA ANIMATED ORBS --- */
-    /* These pseudo-elements act as moving "lamps" behind the glass */
-    body::before, body::after {
-      content: '';
+    /* --- NEW AURORA BACKGROUND CONTAINER --- */
+    .aurora-bg {
       position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: -1;
+      overflow: hidden;
+      /* Base Mesh Gradient (Static Background) */
+      background: radial-gradient(at top left, #1e1b4b, transparent),
+                  radial-gradient(at bottom right, #312e81, transparent);
+    }
+
+    /* --- MOVING ORBS --- */
+    .aurora-bg span {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px); /* The "Glow" */
+      opacity: 0.7;
+    }
+
+    /* ORB 1: Pink/Purple (Top Left) */
+    .aurora-bg span:nth-child(1) {
+      top: -10%;
+      left: -10%;
+      width: 70vw;
+      height: 70vw;
+      background: #701a75; /* Deep Pink */
+      animation: moveInCircle 20s linear infinite;
+    }
+
+    /* ORB 2: Blue/Indigo (Bottom Right) */
+    .aurora-bg span:nth-child(2) {
+      bottom: -10%;
+      right: -10%;
+      width: 70vw;
+      height: 70vw;
+      background: #1e3a8a; /* Deep Blue */
+      animation: moveInCircle 25s linear infinite reverse;
+    }
+
+    /* ORB 3: Teal/Cyan (CENTER BRIDGE - Fixes dark spot) */
+    .aurora-bg span:nth-child(3) {
+      top: 20%;
+      left: 20%;
       width: 60vw;
       height: 60vw;
-      border-radius: 50%;
-      filter: blur(80px); /* The "Soft Glow" effect */
-      opacity: 0.6;
-      z-index: -2;
-      animation: drift 20s infinite alternate ease-in-out;
+      background: #0f766e; /* Teal */
+      opacity: 0.5;
+      animation: floatCenter 30s ease-in-out infinite;
     }
 
-    /* Orb 1: Purple/Pink */
-    body::before {
-      background: #4e4376;
-      top: -15%;
-      left: -15%;
+    /* --- ANIMATIONS --- */
+    @keyframes moveInCircle {
+      0% { transform: rotate(0deg) translate(20px, 20px) rotate(0deg); }
+      100% { transform: rotate(360deg) translate(20px, 20px) rotate(-360deg); }
     }
 
-    /* Orb 2: Teal/Blue */
-    body::after {
-      background: #2b5876;
-      bottom: -15%;
-      right: -15%;
-      animation-delay: -10s; /* Start halfway through animation */
-    }
-
-    @keyframes drift {
+    @keyframes floatCenter {
       0% { transform: translate(0, 0) scale(1); }
-      100% { transform: translate(30px, 50px) scale(1.1); }
+      33% { transform: translate(30px, -50px) scale(1.1); }
+      66% { transform: translate(-20px, 20px) scale(0.9); }
+      100% { transform: translate(0, 0) scale(1); }
     }
-    
-    /* GLASS CONTAINER */
+
+    /* --- GLASS CONTAINER (Unchanged) --- */
     .verse-container {
       position: relative;
       padding: 4rem 3rem 3.5rem;
@@ -78,20 +104,17 @@
       z-index: 1;
       animation: fadeIn 1.4s ease;
       
-      /* Layout Stability */
       min-height: 250px; 
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
       
-      /* Glassmorphism Styles */
-      /* We lower opacity to 0.03 so the Aurora colors show through clearly */
-      background: rgba(255, 255, 255, 0.03); 
-      backdrop-filter: blur(20px) saturate(180%);
-      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      /* Glassmorphism */
+      background: rgba(255, 255, 255, 0.05); 
+      backdrop-filter: blur(24px) saturate(180%);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
       
-      /* Subtle Borders */
       border: 1px solid rgba(255, 255, 255, 0.1);
       border-top: 1px solid rgba(255, 255, 255, 0.2);
       border-left: 1px solid rgba(255, 255, 255, 0.2);
@@ -105,13 +128,11 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
-    /* TEXT STYLING */
+    /* --- TEXT STYLING (Unchanged) --- */
     .votd {
       width: 100%;
       color: #fdfdfd;
       text-shadow: 1px 1px 6px rgba(0,0,0,0.5);
-      
-      /* SMOOTH ENTRY */
       opacity: 0;
       transition: opacity 0.8s ease-out;
     }
@@ -119,7 +140,6 @@
       opacity: 1;
     }
 
-    /* THE VERSE: Serif (Lora) */
     .votd p, .votd blockquote { 
       font-family: 'Lora', serif;
       font-size: clamp(1.8rem, 5vw, 3.2rem);
@@ -128,7 +148,6 @@
       margin: 0 0 1.5rem 0;
     }
 
-    /* THE REFERENCE: Sans-serif (Inter) */
     .votd a.passage {
       font-family: 'Inter', sans-serif;
       font-size: 0.9rem;
@@ -147,7 +166,6 @@
       letter-spacing: 4px;
     }
 
-    /* ATTRIBUTION LINK */
     .attribution {
       position: absolute;
       bottom: 0.75rem;
@@ -165,6 +183,14 @@
   </style>
 </head>
 <body>
+
+  <!-- NEW BACKGROUND LAYER -->
+  <div class="aurora-bg">
+    <span></span> <!-- Orb 1 -->
+    <span></span> <!-- Orb 2 -->
+    <span></span> <!-- Orb 3 -->
+  </div>
+
   <div class="verse-container">
     <div id="votd" class="votd" aria-live="polite"></div>
     <a class="attribution" href="https://www.youversion.com" target="_blank" rel="noopener noreferrer">
@@ -176,7 +202,6 @@
     (async function loadVerse() {
       const target = document.getElementById('votd');
       
-      // 1. Calculate Local Day
       const now = new Date();
       const start = new Date(now.getFullYear(), 0, 0);
       const diff = now - start;
@@ -184,24 +209,19 @@
       const localDay = Math.floor(diff / oneDay);
 
       try {
-        // 2. Fetch
         const response = await fetch(`/api/votd?day=${localDay}`);
-        
         if (!response.ok) throw new Error("API Request Failed");
-        
         const data = await response.json();
 
         const verseText = data.verse?.text || '';
         const reference = data.verse?.human_reference || '';
         const passageUrl = data.verse?.url || '';
 
-        // 3. Render
         target.innerHTML = `
           <blockquote>${verseText}</blockquote>
           ${reference ? `<p><a class="passage" href="${passageUrl}" target="_blank" rel="noopener noreferrer">${reference}</a></p>` : ''}
         `;
 
-        // 4. Fade In
         requestAnimationFrame(() => {
           target.classList.add('visible');
         });
