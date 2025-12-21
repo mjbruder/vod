@@ -11,7 +11,7 @@
   <link rel="icon" type="image/png" sizes="512x512" href="assets/favicon-512x512.png" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   
-  <!-- LOAD FONTS: Lora (Serif) & Inter (Sans) -->
+  <!-- FONTS: Lora (Serif) & Inter (Sans) -->
   <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@1,400&family=Inter:wght@300;400&display=swap" rel="stylesheet" />
   
   <style>
@@ -24,29 +24,49 @@
       font-family: 'Inter', sans-serif;
       color: #fff;
       text-align: center;
-      background: linear-gradient(-45deg, #2b5876, #4e4376, #2b5876);
-      background-size: 400% 400%;
-      animation: gradientShift 24s ease infinite;
       overflow: hidden;
+      
+      /* --- AURORA BACKGROUND BASE --- */
+      background-color: #0f172a; /* Deep dark blue base */
+      /* Static background gradients to fill gaps */
+      background-image: 
+        radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
+        radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%), 
+        radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%);
     }
-    @keyframes gradientShift {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
-    }
-    body::after {
-      content: "";
+
+    /* --- AURORA ANIMATED ORBS --- */
+    /* These pseudo-elements act as moving "lamps" behind the glass */
+    body::before, body::after {
+      content: '';
       position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='noise'><feTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/></filter><rect width='200' height='200' filter='url(%23noise)'/></svg>");
-      opacity: 0.08;
-      animation: noiseShift 60s linear infinite;
-      z-index: -1;
+      width: 60vw;
+      height: 60vw;
+      border-radius: 50%;
+      filter: blur(80px); /* The "Soft Glow" effect */
+      opacity: 0.6;
+      z-index: -2;
+      animation: drift 20s infinite alternate ease-in-out;
     }
-    @keyframes noiseShift {
-      0%   { transform: translate(0,0); }
-      50%  { transform: translate(-20px, 15px); }
-      100% { transform: translate(0,0); }
+
+    /* Orb 1: Purple/Pink */
+    body::before {
+      background: #4e4376;
+      top: -15%;
+      left: -15%;
+    }
+
+    /* Orb 2: Teal/Blue */
+    body::after {
+      background: #2b5876;
+      bottom: -15%;
+      right: -15%;
+      animation-delay: -10s; /* Start halfway through animation */
+    }
+
+    @keyframes drift {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(30px, 50px) scale(1.1); }
     }
     
     /* GLASS CONTAINER */
@@ -66,15 +86,20 @@
       align-items: center;
       
       /* Glassmorphism Styles */
-      background: rgba(255, 255, 255, 0.05);
-      backdrop-filter: blur(16px) saturate(180%);
-      -webkit-backdrop-filter: blur(16px) saturate(180%);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      border-top: 1px solid rgba(255, 255, 255, 0.3);
-      border-left: 1px solid rgba(255, 255, 255, 0.3);
+      /* We lower opacity to 0.03 so the Aurora colors show through clearly */
+      background: rgba(255, 255, 255, 0.03); 
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      
+      /* Subtle Borders */
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-top: 1px solid rgba(255, 255, 255, 0.2);
+      border-left: 1px solid rgba(255, 255, 255, 0.2);
+      
       border-radius: 24px;
       box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
     }
+    
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(14px); }
       to { opacity: 1; transform: translateY(0); }
@@ -86,16 +111,15 @@
       color: #fdfdfd;
       text-shadow: 1px 1px 6px rgba(0,0,0,0.5);
       
-      /* SMOOTH ENTRY: Start invisible, fade in when text arrives */
+      /* SMOOTH ENTRY */
       opacity: 0;
       transition: opacity 0.8s ease-out;
     }
-    /* Class added via JS when data is ready */
     .votd.visible {
       opacity: 1;
     }
 
-    /* THE VERSE: Serif, Elegant, Italic */
+    /* THE VERSE: Serif (Lora) */
     .votd p, .votd blockquote { 
       font-family: 'Lora', serif;
       font-size: clamp(1.8rem, 5vw, 3.2rem);
@@ -104,7 +128,7 @@
       margin: 0 0 1.5rem 0;
     }
 
-    /* THE REFERENCE: Sans-serif, Uppercase, Clean */
+    /* THE REFERENCE: Sans-serif (Inter) */
     .votd a.passage {
       font-family: 'Inter', sans-serif;
       font-size: 0.9rem;
@@ -149,11 +173,10 @@
   </div>
 
   <script>
-    // Immediate Execution Function
     (async function loadVerse() {
       const target = document.getElementById('votd');
       
-      // 1. Calculate the User's Local Day of Year
+      // 1. Calculate Local Day
       const now = new Date();
       const start = new Date(now.getFullYear(), 0, 0);
       const diff = now - start;
@@ -161,7 +184,7 @@
       const localDay = Math.floor(diff / oneDay);
 
       try {
-        // 2. Pass the local day to the backend
+        // 2. Fetch
         const response = await fetch(`/api/votd?day=${localDay}`);
         
         if (!response.ok) throw new Error("API Request Failed");
@@ -172,21 +195,20 @@
         const reference = data.verse?.human_reference || '';
         const passageUrl = data.verse?.url || '';
 
-        // 3. Render HTML
+        // 3. Render
         target.innerHTML = `
           <blockquote>${verseText}</blockquote>
           ${reference ? `<p><a class="passage" href="${passageUrl}" target="_blank" rel="noopener noreferrer">${reference}</a></p>` : ''}
         `;
 
-        // 4. Trigger Fade In
-        // requestAnimationFrame ensures the browser paints the HTML before we fade it in
+        // 4. Fade In
         requestAnimationFrame(() => {
           target.classList.add('visible');
         });
 
       } catch (err) {
         target.innerHTML = "<p>Unable to load Verse of the Day.</p>";
-        target.classList.add('visible'); // Make sure error message is visible
+        target.classList.add('visible');
         console.error(err);
       }
     })();
