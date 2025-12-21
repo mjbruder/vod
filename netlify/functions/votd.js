@@ -50,7 +50,9 @@ export async function handler(event, context) {
   }
 
   // ID 206 = World English Bible (Public Domain)
-  const bibleId = "206"; 
+  //const bibleId = "206"; 
+  // ID 111 = NIV (Licensed)
+  const bibleId = "111"; 
 
   try {
     // Step 1: Get Passage ID
