@@ -10,7 +10,10 @@
   <link rel="icon" type="image/png" sizes="192x192" href="assets/favicon-192x192.png" />
   <link rel="icon" type="image/png" sizes="512x512" href="assets/favicon-512x512.png" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400&display=swap" rel="stylesheet" />
+  
+  <!-- LOAD FONTS: Lora (Serif) & Inter (Sans) -->
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@1,400&family=Inter:wght@300;400&display=swap" rel="stylesheet" />
+  
   <style>
     body {
       margin: 0;
@@ -45,37 +48,44 @@
       50%  { transform: translate(-20px, 15px); }
       100% { transform: translate(0,0); }
     }
+    
+    /* GLASS CONTAINER */
     .verse-container {
       position: relative;
-      background: rgba(0, 0, 0, 0.55);
       padding: 4rem 3rem 3.5rem;
-      border-radius: 20px;
       max-width: 1000px;
       width: min(92vw, 1000px);
-      box-shadow: 0 12px 30px rgba(0,0,0,0.5);
-      animation: fadeIn 1.4s ease;
       z-index: 1;
-
-      /* LAYOUT STABILITY: Reserve space so the box doesn't resize */
+      animation: fadeIn 1.4s ease;
+      
+      /* Layout Stability */
       min-height: 250px; 
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
+      
+      /* Glassmorphism Styles */
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(16px) saturate(180%);
+      -webkit-backdrop-filter: blur(16px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-top: 1px solid rgba(255, 255, 255, 0.3);
+      border-left: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 24px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
     }
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(14px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    .votd {
-      font-size: clamp(1.6rem, 4.5vw, 3rem);
-      line-height: 1.7;
-      font-weight: 300;
-      letter-spacing: 0.4px;
-      color: #fdfdfd;
-      text-shadow: 1px 1px 6px rgba(0,0,0,0.7);
-      width: 100%;
 
+    /* TEXT STYLING */
+    .votd {
+      width: 100%;
+      color: #fdfdfd;
+      text-shadow: 1px 1px 6px rgba(0,0,0,0.5);
+      
       /* SMOOTH ENTRY: Start invisible, fade in when text arrives */
       opacity: 0;
       transition: opacity 0.8s ease-out;
@@ -85,19 +95,35 @@
       opacity: 1;
     }
 
-    .votd p, .votd blockquote { margin: 0.4rem 0; }
-    .votd a.passage {
-      font-size: inherit;
-      color: #e6e6e6;
+    /* THE VERSE: Serif, Elegant, Italic */
+    .votd p, .votd blockquote { 
+      font-family: 'Lora', serif;
+      font-size: clamp(1.8rem, 5vw, 3.2rem);
+      line-height: 1.5;
       font-style: italic;
+      margin: 0 0 1.5rem 0;
+    }
+
+    /* THE REFERENCE: Sans-serif, Uppercase, Clean */
+    .votd a.passage {
+      font-family: 'Inter', sans-serif;
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      font-style: normal;
+      color: rgba(255, 255, 255, 0.8);
       text-decoration: none;
-      border-bottom: 1px dashed rgba(255,255,255,0.35);
-      transition: color 0.3s ease, border-color 0.3s ease;
+      border-bottom: 1px solid rgba(255,255,255,0.3);
+      padding-bottom: 2px;
+      transition: all 0.3s ease;
     }
     .votd a.passage:hover {
       color: #ffffff;
-      border-bottom-color: rgba(255,255,255,0.75);
+      border-bottom-color: #ffffff;
+      letter-spacing: 4px;
     }
+
+    /* ATTRIBUTION LINK */
     .attribution {
       position: absolute;
       bottom: 0.75rem;
@@ -106,6 +132,7 @@
       color: rgba(255,255,255,0.45);
       font-style: italic;
       text-decoration: none;
+      font-family: 'Inter', sans-serif;
     }
     .attribution:hover {
       color: rgba(255,255,255,0.7);
