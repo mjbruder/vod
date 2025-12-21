@@ -14,7 +14,11 @@
   <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@1,400&family=Inter:wght@300;400&display=swap" rel="stylesheet" />
   
   <style>
-    /* RESET */
+    /* RESET: Ensure padding doesn't expand width */
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       margin: 0;
       height: 100vh;
@@ -30,56 +34,50 @@
 
     /* --- AURORA BACKGROUND --- */
     .aurora-bg {
-      position: fixed; /* Fixed ensures it stays put on mobile scroll */
+      position: fixed;
       top: 0;
       left: 0;
       width: 100vw;
       height: 100vh;
       z-index: -1;
-      background: #0f172a; /* Dark base to prevent empty gaps */
+      background: #0f172a;
       overflow: hidden;
     }
 
     .aurora-bg span {
       position: absolute;
       border-radius: 50%;
-      filter: blur(80px); /* Heavy blur for soft edges */
+      filter: blur(80px);
       opacity: 0.6; 
     }
 
-    /* ORB 1: Deep Purple (Moves Top-Left to Center-Right) */
     .aurora-bg span:nth-child(1) {
       top: -10%;
       left: -10%;
       width: 60vw;
       height: 60vw;
-      background: #7e22ce; /* Purple */
+      background: #7e22ce;
       animation: roamOne 18s ease-in-out infinite alternate;
     }
 
-    /* ORB 2: Royal Blue (Moves Bottom-Right to Center-Left) */
     .aurora-bg span:nth-child(2) {
       bottom: -10%;
       right: -10%;
       width: 60vw;
       height: 60vw;
-      background: #1d4ed8; /* Blue */
+      background: #1d4ed8;
       animation: roamTwo 22s ease-in-out infinite alternate;
     }
 
-    /* ORB 3: Teal/Cyan (Moves Center to Top/Bottom) */
     .aurora-bg span:nth-child(3) {
       top: 25%;
       left: 25%;
       width: 50vw;
       height: 50vw;
-      background: #0d9488; /* Teal */
+      background: #0d9488;
       opacity: 0.5;
       animation: roamThree 15s ease-in-out infinite alternate;
     }
-
-    /* --- AGGRESSIVE MOVEMENT ANIMATIONS --- */
-    /* Using 'translate' with large Viewport Width (vw) units ensures visible movement */
 
     @keyframes roamOne {
       0% { transform: translate(0, 0) scale(1); }
@@ -97,16 +95,18 @@
 
     @keyframes roamThree {
       0% { transform: translate(0, 0) scale(0.8); }
-      50% { transform: translate(20vw, -20vh) scale(1.4); } /* Big stretch */
+      50% { transform: translate(20vw, -20vh) scale(1.4); }
       100% { transform: translate(-20vw, 20vh) scale(0.9); }
     }
 
     /* --- GLASS CONTAINER --- */
     .verse-container {
       position: relative;
-      padding: 4rem 3rem 3.5rem;
-      max-width: 1000px;
-      width: min(92vw, 1000px);
+      
+      /* FIXED: Reduced width and responsive padding */
+      width: min(85%, 1000px); /* 85% width ensures 7.5% gap on each side */
+      padding: clamp(2.5rem, 5vw, 4rem) clamp(1.5rem, 4vw, 3rem);
+      
       z-index: 1;
       animation: fadeIn 1.4s ease;
       
@@ -191,9 +191,9 @@
 
   <!-- BACKGROUND LAYER -->
   <div class="aurora-bg">
-    <span></span> <!-- Purple -->
-    <span></span> <!-- Blue -->
-    <span></span> <!-- Teal -->
+    <span></span>
+    <span></span>
+    <span></span>
   </div>
 
   <div class="verse-container">
