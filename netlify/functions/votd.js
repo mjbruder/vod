@@ -10,9 +10,15 @@ export async function handler(event, context) {
   // We look for ?day=XXX from the frontend. 
   // If missing, fallback to Server UTC time (Legacy support).
   let dayToFetch;
-  
-  if (event.queryStringParameters && event.queryStringParameters.day) {
-    dayToFetch = parseInt(event.queryStringParameters.day, 10);
+
+  // Validate the client-supplied day: must be a 1-3 digit number in a valid
+  // day-of-year range (1-366). Anything else falls back to server time.
+  const rawDay = event.queryStringParameters && event.queryStringParameters.day;
+  const isValidDay = typeof rawDay === "string" && /^\d{1,3}$/.test(rawDay);
+  const parsedDay = isValidDay ? parseInt(rawDay, 10) : NaN;
+
+  if (isValidDay && parsedDay >= 1 && parsedDay <= 366) {
+    dayToFetch = parsedDay;
   } else {
     // Fallback: Server Time Calculation
     const today = new Date();
@@ -134,10 +140,12 @@ export async function handler(event, context) {
     };
 
   } catch (err) {
+    // Log full details server-side only; never expose internal error
+    // details (upstream endpoints, stack traces) to the client.
     console.error("Function Error:", err);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: err.message })
+      body: JSON.stringify({ error: "Unable to retrieve verse of the day." })
     };
   }
 }

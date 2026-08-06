@@ -243,17 +243,46 @@
         const reference = data.verse?.human_reference || '';
         const passageUrl = data.verse?.url || '';
 
-        target.innerHTML = `
-          <blockquote>${verseText}</blockquote>
-          ${reference ? `<p><a class="passage" href="${passageUrl}" target="_blank" rel="noopener noreferrer">${reference}</a></p>` : ''}
-        `;
+        // Build DOM safely instead of using innerHTML with untrusted API data
+        target.textContent = '';
+
+        const blockquote = document.createElement('blockquote');
+        blockquote.textContent = verseText;
+        target.appendChild(blockquote);
+
+        if (reference) {
+          const p = document.createElement('p');
+          const link = document.createElement('a');
+          link.className = 'passage';
+          link.textContent = reference;
+          link.target = '_blank';
+          link.rel = 'noopener noreferrer';
+
+          // Only allow http/https URLs to prevent javascript:/data: URI injection
+          try {
+            const parsedUrl = new URL(passageUrl, window.location.origin);
+            if (parsedUrl.protocol === 'https:' || parsedUrl.protocol === 'http:') {
+              link.href = parsedUrl.href;
+            } else {
+              link.href = '#';
+            }
+          } catch {
+            link.href = '#';
+          }
+
+          p.appendChild(link);
+          target.appendChild(p);
+        }
 
         requestAnimationFrame(() => {
           target.classList.add('visible');
         });
 
       } catch (err) {
-        target.innerHTML = "<p>Unable to load Verse of the Day.</p>";
+        target.textContent = '';
+        const p = document.createElement('p');
+        p.textContent = 'Unable to load Verse of the Day.';
+        target.appendChild(p);
         target.classList.add('visible');
         console.error(err);
       }
